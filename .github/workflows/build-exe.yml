@@ -6,6 +6,13 @@ on:
     types: [completed]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  BUILD_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+
+permissions:
+  contents: write
+
 jobs:
   build:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
@@ -33,7 +40,23 @@ jobs:
       - name: Build one-file exe
         run: uv run pyinstaller --onefile --name QQMusic2BiliFav main.py
 
-      - name: Upload artifact
+      - name: Ensure release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view latest-exe --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create latest-exe --repo $env:GITHUB_REPOSITORY --title "Latest EXE Build" --notes "Auto-generated build release."
+          }
+
+      - name: Upload EXE to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload latest-exe dist/QQMusic2BiliFav.exe --repo $env:GITHUB_REPOSITORY --clobber
+          gh release edit latest-exe --repo $env:GITHUB_REPOSITORY --title "Latest EXE Build" --notes "Built from commit $env:BUILD_SHA"
+
+      - name: Upload artifact (zip backup)
         uses: actions/upload-artifact@v4
         with:
           name: QQMusic2BiliFav-exe
