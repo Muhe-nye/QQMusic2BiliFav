@@ -1,0 +1,13 @@
+[project]
+name = "qqmusic2bilifav"
+version = "0.1.0"
+description = "Sync QQMusic playlist to Bilibili favorites"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "pydantic>=2.12.5",
+    "python-dotenv>=1.1.1",
+    "qqmusic-api-python>=0.4.1",
+]
