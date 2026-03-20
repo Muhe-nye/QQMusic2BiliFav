@@ -75,6 +75,7 @@ async def main_async(args: argparse.Namespace):
     )
     engine = SyncEngine(QQMusicClient(), platform, concurrency=max(1, args.concurrency))
 
+    report: dict[str, object]
     try:
         report = await engine.run(
             qq_playlist_id,
@@ -83,13 +84,34 @@ async def main_async(args: argparse.Namespace):
             only_song_mids=retry_song_mids,
             sync_mode=args.sync_mode,
         )
+    except Exception as exc:
+        logger.error(f"同步失败：{exc}")
+        report = {
+            "playlist": {
+                "id": qq_playlist_id,
+                "name": args.folder_name or "",
+                "sync_mode": args.sync_mode,
+            },
+            "summary": {
+                "added": 0,
+                "matched": 0,
+                "skipped": 0,
+                "errors": 1,
+            },
+            "error": {
+                "type": type(exc).__name__,
+                "message": str(exc),
+                "hint": "可能是 B 站风控（如 412），请稍后重试或降低请求频率。",
+            },
+            "results": [],
+        }
     finally:
         await platform.close()
 
     output_path = Path(args.report)
     output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    logger.info(f"同步完成，报告写入: {output_path.resolve()}")
-    logger.info(f"统计: {report['summary']}")
+    logger.info(f"程序结束，报告写入: {output_path.resolve()}")
+    logger.info(f"统计: {report.get('summary', {})}")
 
 
 def main():
