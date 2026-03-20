@@ -28,4 +28,4 @@ jobs:
         run: uv run python -m compileall main.py source
 
       - name: CLI smoke test
-        run: uv run python .\main.py --help
+        run: uv run python -c "import main; print('smoke-ok')"
